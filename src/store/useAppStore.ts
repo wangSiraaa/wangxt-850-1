@@ -127,7 +127,7 @@ export const useAppStore = create<AppState>()(
           endTime,
           excludeId
         );
-        set({ conflictInfo });
+        set({ conflictInfo: conflict });
         return conflict;
       },
 
@@ -287,7 +287,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'venue-reservation-storage-v3',
+      name: 'venue-reservation-storage-v4',
       partialize: (state) => ({
         currentRole: state.currentRole,
         reservations: state.reservations,

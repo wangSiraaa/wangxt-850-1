@@ -96,7 +96,7 @@ export const mockActivityTypes: ActivityType[] = [
   },
 ];
 
-const testDateStr = '2026-06-07';
+const testDateStr = '2026-06-08';
 
 export const mockReservations: Reservation[] = [
   {

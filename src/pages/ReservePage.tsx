@@ -21,6 +21,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
+import ConflictAlert from '@/components/ConflictAlert';
 
 interface FormData {
   venueId: string;
@@ -610,7 +611,6 @@ export default function ReservePage() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!!liveConflict}
               className="flex-1 btn-primary flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -691,6 +691,7 @@ export default function ReservePage() {
           </div>
         </div>
       </div>
+      <ConflictAlert />
     </div>
   );
 }
