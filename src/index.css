@@ -42,6 +42,10 @@ body {
     @apply px-4 py-2 bg-warning-500 text-white rounded-lg hover:bg-warning-600 transition-all duration-200 hover:shadow-md active:scale-95;
   }
 
+  .btn-info {
+    @apply px-4 py-2 bg-info-500 text-white rounded-lg hover:bg-info-600 transition-all duration-200 hover:shadow-md active:scale-95;
+  }
+
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
   }

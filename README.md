@@ -1,57 +1,169 @@
-# React + TypeScript + Vite
+# 校园社团活动场地预约系统
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 功能概述
 
-Currently, two official plugins are available:
+本系统是一个校园社团活动场地预约管理平台，支持三种角色：
+- **社团负责人**：浏览场地日历、提交预约申请、撤销预约
+- **学生会管理员**：维护活动类型、审核预约队列
+- **后勤人员**：查看布置清单、标记布置完成
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 新增功能：布置状态管理
 
-## Expanding the ESLint configuration
+### 布置状态类型
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+系统新增四种布置状态，便于后勤人员跟踪场地布置进度：
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+| 状态 | 标识 | 颜色 | 说明 |
+|------|------|------|------|
+| 待布置 | `pending` | 黄色 🟡 | 预约已审核通过，等待布置 |
+| 布置中 | `in_progress` | 蓝色 🔵 | 正在进行场地布置 |
+| 已完成 | `completed` | 绿色 🟢 | 场地布置已完成 |
+| 异常 | `abnormal` | 红色 🔴 | 布置过程中发现异常，需要处理 |
+
+### 功能特性
+
+1. **后勤人员筛选**：后勤人员可在布置清单页面按四种状态筛选场地任务
+2. **状态图例展示**：页面顶部展示布置状态图例，清晰标识各状态含义
+3. **状态切换**：后勤人员可根据实际进度切换布置状态
+   - 待布置 → 布置中（点击"开始布置"）
+   - 布置中 → 已完成（点击"布置完成"）
+   - 布置中 → 异常（点击"标记异常"）
+   - 异常 → 布置中（点击"继续布置"）
+4. **社团负责人查看**：社团负责人在场地日历页面查看预约详情时，可看到布置状态图例
+5. **冲突校验保护**：新增布置状态不影响原有场地冲突校验逻辑
+
+### 状态流转约束
+
+- 只有**已通过**（`status === 'approved'`）的预约才能更新布置状态
+- 待审核、已驳回、已撤销的预约无法设置布置状态
+- 布置状态的变更不影响原有的预约审核状态
+
+## 样例数据
+
+系统预置以下样例数据（日期：2026-06-08）：
+
+| 预约ID | 活动名称 | 场地 | 时间 | 审核状态 | 布置状态 | 说明 |
+|--------|----------|------|------|----------|----------|------|
+| res-1 | 摄影社团周例会 | 教学楼A-101 | 14:00-16:00 | 已通过 | 待布置 | 正常待布置任务 |
+| res-2 | 人工智能前沿技术讲座 | 学术报告厅 | 19:00-21:00 | 待审核 | - | 等待审核 |
+| res-4 | PS技能培训工作坊 | 教学楼A-203 | 10:00-12:00 | 已通过 | 布置中 | 正在布置中 |
+| res-5 | 迎新晚会彩排 | 教学楼A-101 | 18:00-22:00 | 已通过 | 已完成 | 布置已完成 |
+| res-6 | 毕业晚会彩排 | 学术报告厅 | 09:00-12:00 | 已通过 | 异常 | 设备异常，需处理 |
+| res-7 | 技术分享会（冲突样例） | 教学楼A-101 | 15:00-17:00 | 待审核 | - | 与 res-1 时间冲突，无法通过审核 |
+
+## 核心业务规则
+
+### 场地冲突校验
+
+预约提交和审核通过前都会进行冲突校验，冲突条件：
+- 同一日期、同一时间段
+- 同一被占用（排除已撤销、已驳回的预约）
+- 时间重叠计算精确到分钟
+
+**重要约束**：冲突预约只能停留在"待审核"状态，无法通过审核。
+
+### 布置状态与冲突校验的关系
+
+布置状态是在预约审核通过后的额外跟踪字段，**不影响**原有冲突校验逻辑：
+- 冲突校验只检查预约的审核状态（`status`）
+- 冲突校验不关心布置状态（`setupStatus`）
+- 无论布置状态如何，只要预约已通过，就会参与冲突计算
+
+## 检查命令
+
+### 类型检查
+
+```bash
+npm run check
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 代码规范检查
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm run lint
+```
 
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 构建验证
+
+```bash
+npm run build
+```
+
+### 启动开发服务器
+
+```bash
+npm run dev
+```
+
+## 功能验证步骤
+
+### 验证 1：冲突预约无法通过审核
+
+**前置条件**：系统中存在样例数据
+
+1. 启动开发服务器：`npm run dev`
+2. 切换角色为"学生会管理员"
+3. 进入"审核队列"页面
+4. 找到"技术分享会（冲突样例）"预约（res-7）
+5. 点击"通过"按钮
+6. **预期结果**：弹出错误提示"审核失败：该时段与'摄影社团周例会'冲突 (14:00-16:00)"
+7. 检查预约状态：仍然为"待审核"，无法通过
+
+### 验证 2：已通过预约可以切换布置状态
+
+**前置条件**：系统中存在样例数据
+
+1. 切换角色为"后勤人员"
+2. 进入"布置清单"页面
+3. 查看页面顶部的"布置状态图例"，确认四种状态都有展示
+4. 查看各状态统计：待布置(1)、布置中(1)、已完成(1)、异常(1)
+5. 使用状态筛选按钮，分别筛选不同状态，确认筛选正确
+6. 展开"摄影社团周例会"（待布置状态）：
+   - 点击"开始布置"按钮
+   - **预期结果**：状态变为"布置中"，显示成功提示
+7. 展开"PS技能培训工作坊"（布置中状态）：
+   - 点击"布置完成"按钮
+   - **预期结果**：状态变为"已完成"，显示成功提示
+8. 展开"毕业晚会彩排"（异常状态）：
+   - 点击"继续布置"按钮
+   - **预期结果**：状态变为"布置中"，显示成功提示
+
+### 验证 3：社团负责人查看布置状态
+
+1. 切换角色为"社团负责人"
+2. 进入"场地日历"页面
+3. 点击左侧场地列表，选择"教学楼A-101"
+4. 在日历中找到 2026-06-08 的"摄影社团周例会"
+5. 鼠标悬停在该预约上，查看弹出的详情卡片
+6. **预期结果**：详情卡片中同时显示"已通过"和对应的布置状态标签
+
+## 技术栈
+
+- React 18 + TypeScript
+- Vite 构建工具
+- Zustand 状态管理（带持久化）
+- Tailwind CSS 样式框架
+- React Router 路由
+- Lucide React 图标库
+
+## 目录结构
+
+```
+src/
+├── components/       # 公共组件
+│   ├── StatusBadge.tsx      # 状态标签组件（含布置状态）
+│   └── ...
+├── pages/            # 页面组件
+│   ├── SetupPage.tsx        # 布置清单页面（后勤人员）
+│   ├── CalendarPage.tsx     # 场地日历页面
+│   └── ...
+├── store/            # 状态管理
+│   └── useAppStore.ts       # 全局状态
+├── types/            # 类型定义
+│   └── index.ts             # 类型定义和常量
+├── data/             # 模拟数据
+│   └── mockData.ts          # 样例数据
+├── utils/            # 工具函数
+│   └── conflictUtils.ts     # 冲突校验逻辑
+└── ...
 ```

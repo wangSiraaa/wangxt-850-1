@@ -17,7 +17,7 @@ import {
   LayoutGrid,
   X,
 } from 'lucide-react';
-import StatusBadge from '@/components/StatusBadge';
+import StatusBadge, { SetupStatusBadge } from '@/components/StatusBadge';
 
 export default function CalendarPage() {
   const navigate = useNavigate();
@@ -355,7 +355,12 @@ export default function CalendarPage() {
                   <h4 className="font-semibold text-gray-800">
                     {hoveredReservation.activityName}
                   </h4>
-                  <StatusBadge status={hoveredReservation.status} />
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <StatusBadge status={hoveredReservation.status} />
+                    {hoveredReservation.status === 'approved' && hoveredReservation.setupStatus && (
+                      <SetupStatusBadge status={hoveredReservation.setupStatus} />
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setHoveredReservation(null)}

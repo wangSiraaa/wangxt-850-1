@@ -8,6 +8,7 @@ import {
   UserRole,
   ConflictInfo,
   ReservationStatus,
+  SetupStatus,
 } from '@/types';
 import {
   mockVenues,
@@ -46,6 +47,7 @@ interface AppState {
   rejectReservation: (reservationId: string, auditRemark: string) => { success: boolean; message: string };
   revokeReservation: (reservationId: string, reason: string, revokedBy: string) => { success: boolean; message: string };
   markSetupCompleted: (reservationId: string) => { success: boolean; message: string };
+  updateSetupStatus: (reservationId: string, setupStatus: SetupStatus) => { success: boolean; message: string };
   toggleSafetyRecord: (reservationId: string) => void;
 
   addActivityType: (data: Omit<ActivityType, 'id'>) => void;
@@ -145,12 +147,27 @@ export const useAppStore = create<AppState>()(
           return { success: false, message: approvalCheck.reason };
         }
 
+        const conflict = checkConflict(
+          state.reservations,
+          reservation.venueId,
+          reservation.date,
+          reservation.startTime,
+          reservation.endTime,
+          reservation.id
+        );
+
+        if (conflict.hasConflict) {
+          set({ conflictInfo: conflict });
+          return { success: false, message: `审核失败：${conflict.message}` };
+        }
+
         set({
           reservations: state.reservations.map((r) =>
             r.id === reservationId
               ? {
                   ...r,
                   status: 'approved' as ReservationStatus,
+                  setupStatus: 'pending' as SetupStatus,
                   auditRemark,
                   auditAt: new Date().toISOString(),
                   auditBy: state.currentRole,
@@ -219,6 +236,26 @@ export const useAppStore = create<AppState>()(
           ),
         });
         return { success: true, message: '已标记为布置完成' };
+      },
+
+      updateSetupStatus: (reservationId, setupStatus) => {
+        const state = get();
+        const reservation = state.reservations.find((r) => r.id === reservationId);
+
+        if (!reservation) {
+          return { success: false, message: '预约记录不存在' };
+        }
+
+        if (reservation.status !== 'approved') {
+          return { success: false, message: '只有已通过的预约才能更新布置状态' };
+        }
+
+        set({
+          reservations: state.reservations.map((r) =>
+            r.id === reservationId ? { ...r, setupStatus } : r
+          ),
+        });
+        return { success: true, message: `布置状态已更新为${setupStatus === 'pending' ? '待布置' : setupStatus === 'in_progress' ? '布置中' : setupStatus === 'completed' ? '已完成' : '异常'}` };
       },
 
       toggleSafetyRecord: (reservationId) => {
